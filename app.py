@@ -119,7 +119,7 @@ def parse_csv(content):
 
 @app.route('/')
 def index():
-    return open('/home/claude/qr-app/index.html').read()
+    return open(os.path.join(os.path.dirname(__file__), 'index.html')).read()
 
 @app.route('/parse', methods=['POST'])
 def parse():
