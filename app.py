@@ -204,5 +204,16 @@ def generate():
     return send_file(buf, mimetype='application/zip', as_attachment=True, download_name='qrcodes.zip')
 
 if __name__ == '__main__':
-    load_veolia_logo()  # Charger le logo au démarrage
-    app.run(host='0.0.0.0', port=5000)
+    print("=" * 50)
+    print("Démarrage de l'application Veolia QR Code")
+    print("=" * 50)
+    load_veolia_logo()
+    print("=" * 50)
+    
+    # Pour le développement local
+    if os.environ.get('FLASK_ENV') == 'development':
+        app.run(host='0.0.0.0', port=5000, debug=True)
+    else:
+        # Pour la production (Render)
+        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+
