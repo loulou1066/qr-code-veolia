@@ -11,6 +11,26 @@ from PIL import Image, ImageDraw, ImageFont
 app = Flask(__name__)
 
 VEOLIA_RED = "#ED1C24"
+VEOLIA_LOGO_B64 = None
+
+# Charger le logo au démarrage de l'application (avant toute requête)
+def load_veolia_logo():
+    """Charge le logo Veolia et le convertit en base64"""
+    global VEOLIA_LOGO_B64
+    logo_path = os.path.join(os.path.dirname(__file__), 'veolia_logo.png')
+    if os.path.exists(logo_path):
+        try:
+            with open(logo_path, 'rb') as f:
+                VEOLIA_LOGO_B64 = base64.b64encode(f.read()).decode('utf-8')
+            print("✓ Logo Veolia chargé avec succès")
+        except Exception as e:
+            print(f"✗ Erreur chargement logo Veolia: {e}")
+    else:
+        print(f"✗ Logo Veolia non trouvé à: {logo_path}")
+
+load_veolia_logo()
+
+VEOLIA_RED = "#ED1C24"
 VEOLIA_LOGO_B64 = None  # sera chargé au démarrage
 
 def load_veolia_logo():
