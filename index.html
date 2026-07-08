@@ -1,422 +1,138 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QR Codes Veolia</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: #f5f5f5;
-    color: #1a1a1a;
-    min-height: 100vh;
-  }
-
-  header {
-    background: #ED1C24;
-    padding: 16px 32px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  }
-  header h1 {
-    color: white;
-    font-size: 20px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-  }
-  header span {
-    color: rgba(255,255,255,0.7);
-    font-size: 14px;
-  }
-
-  .container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 32px 16px;
-  }
-
-  /* ETAPES */
-  .steps {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 32px;
-  }
-  @media(max-width:600px){ .steps { grid-template-columns: 1fr; } }
-
-  .step {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    border: 1.5px solid #e8e8e8;
-  }
-  .step-num {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px; height: 28px;
-    background: #ED1C24;
-    color: white;
-    border-radius: 50%;
-    font-size: 13px;
-    font-weight: 700;
-    margin-bottom: 12px;
-  }
-  .step h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #333; }
-
-  /* UPLOAD ZONE */
-  .upload-zone {
-    border: 2px dashed #d0d0d0;
-    border-radius: 8px;
-    padding: 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: #fafafa;
-  }
-  .upload-zone:hover, .upload-zone.drag { border-color: #ED1C24; background: #fff5f5; }
-  .upload-zone input { display: none; }
-  .upload-zone p { font-size: 13px; color: #888; margin-top: 6px; }
-  .upload-zone .icon { font-size: 28px; }
-  .upload-zone .filename { font-size: 13px; color: #ED1C24; font-weight: 600; margin-top: 6px; }
-
-  /* LOGO UPLOAD */
-  .logo-zone {
-    border: 2px dashed #d0d0d0;
-    border-radius: 8px;
-    padding: 16px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: #fafafa;
-  }
-  .logo-zone:hover { border-color: #ED1C24; background: #fff5f5; }
-  .logo-zone input { display: none; }
-  .logo-zone p { font-size: 12px; color: #888; margin-top: 4px; }
-  .logo-preview { max-height: 48px; margin-top: 8px; }
-
-  /* TABLE */
-  .table-wrap {
-    background: white;
-    border-radius: 12px;
-    border: 1.5px solid #e8e8e8;
-    overflow: hidden;
-    margin-bottom: 24px;
-    display: none;
-  }
-  .table-header {
-    padding: 14px 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid #f0f0f0;
-  }
-  .table-header h2 { font-size: 15px; font-weight: 600; }
-  .table-header small { font-size: 12px; color: #888; }
-
-  .controls {
-    padding: 10px 20px;
-    display: flex;
-    gap: 8px;
-    border-bottom: 1px solid #f0f0f0;
-    flex-wrap: wrap;
-    align-items: center;
-  }
-  .controls input[type=text] {
-    flex: 1;
-    min-width: 160px;
-    padding: 6px 12px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 13px;
-    outline: none;
-  }
-  .controls input[type=text]:focus { border-color: #ED1C24; }
-
-  .btn-sm {
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    border: 1.5px solid #ddd;
-    background: white;
-    color: #444;
-    transition: all 0.15s;
-  }
-  .btn-sm:hover { border-color: #ED1C24; color: #ED1C24; }
-
-  table { width: 100%; border-collapse: collapse; }
-  thead th {
-    text-align: left;
-    padding: 10px 16px;
-    font-size: 12px;
-    font-weight: 600;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    background: #fafafa;
-    border-bottom: 1px solid #f0f0f0;
-  }
-  thead th:first-child { width: 40px; }
-  tbody tr { border-bottom: 1px solid #f7f7f7; transition: background 0.1s; }
-  tbody tr:hover { background: #fff8f8; }
-  tbody td { padding: 10px 16px; font-size: 13px; }
-  tbody td:first-child { text-align: center; }
-  .badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    background: #fff0f0;
-    color: #ED1C24;
-  }
-
-  /* BOUTON PRINCIPAL */
-  .btn-main {
-    width: 100%;
-    padding: 14px;
-    background: #ED1C24;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: none;
-    letter-spacing: 0.3px;
-  }
-  .btn-main:hover { background: #c8151c; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(237,28,36,0.3); }
-  .btn-main:disabled { background: #ccc; transform: none; box-shadow: none; cursor: not-allowed; }
-
-  /* PROGRESS */
-  .progress-wrap { display: none; margin-top: 16px; }
-  .progress-bar-bg {
-    height: 6px;
-    background: #f0f0f0;
-    border-radius: 3px;
-    overflow: hidden;
-    margin-bottom: 6px;
-  }
-  .progress-bar { height: 100%; background: #ED1C24; border-radius: 3px; width: 0%; transition: width 0.3s; }
-  .progress-label { font-size: 12px; color: #888; text-align: center; }
-
-  /* SUCCES */
-  .success {
-    display: none;
-    margin-top: 16px;
-    padding: 14px 18px;
-    background: #f0fff4;
-    border: 1.5px solid #86efac;
-    border-radius: 10px;
-    font-size: 14px;
-    color: #166534;
-    font-weight: 500;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur QR Code Veolia</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #ED1C24;
+            text-align: center;
+        }
+        .upload-section, .logo-section, .preview-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 5px;
+        }
+        .logo-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .logo-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .logo-option:hover {
+            background-color: #f9f9f9;
+        }
+        .logo-option.selected {
+            border-color: #ED1C24;
+            background-color: #fff5f5;
+        }
+        .logo-option input[type="radio"] {
+            margin-right: 10px;
+        }
+        .logo-preview {
+            width: 50px;
+            height: 50px;
+            margin-left: 10px;
+            object-fit: contain;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        .custom-logo-upload {
+            margin-top: 10px;
+            display: none;
+        }
+        .custom-logo-upload.active {
+            display: block;
+        }
+        button {
+            background-color: #ED1C24;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #d01820;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .file-input {
+            margin: 10px 0;
+        }
+        #preview {
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #ED1C24;
+            color: white;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <h1>🔲 Générateur QR Code Veolia</h1>
+        
+        <div class="upload-section">
+            <h3>1. Charger le fichier CSV</h3>
+            <input type="file" id="csvFile" accept=".csv" class="file-input">
+            <button onclick="parseCSV()">Analyser le CSV</button>
+        </div>
 
-<header>
-  <div>
-    <h1>Generateur de QR Codes</h1>
-    <span>Veolia — Saint-Pierre-de-Chandieu</span>
-  </div>
-</header>
-
-<div class="container">
-
-  <div class="steps">
-    <!-- Etape 1 : CSV -->
-    <div class="step">
-      <div class="step-num">1</div>
-      <h2>Importer le fichier CSV</h2>
-      <div class="upload-zone" id="csvZone" onclick="document.getElementById('csvInput').click()"
-           ondragover="event.preventDefault();this.classList.add('drag')"
-           ondragleave="this.classList.remove('drag')"
-           ondrop="handleDrop(event)">
-        <input type="file" id="csvInput" accept=".csv" onchange="handleCSV(this.files[0])">
-        <div class="icon">📄</div>
-        <p>Cliquer ou glisser le fichier CSV</p>
-        <div class="filename" id="csvName"></div>
-      </div>
-    </div>
-
-    <!-- Etape 2 : Logo -->
-    <div class="step">
-      <div class="step-num">2</div>
-      <h2>Logo (optionnel)</h2>
-      <div class="logo-zone" onclick="document.getElementById('logoInput').click()">
-        <input type="file" id="logoInput" accept="image/*" onchange="handleLogo(this.files[0])">
-        <div class="icon">🖼️</div>
-        <p>Cliquer pour ajouter un logo</p>
-        <img id="logoPreview" class="logo-preview" style="display:none">
-      </div>
-    </div>
-  </div>
-
-  <!-- Liste des references -->
-  <div class="table-wrap" id="tableWrap">
-    <div class="table-header">
-      <h2>References</h2>
-      <small id="countLabel"></small>
-    </div>
-    <div class="controls">
-      <input type="text" id="searchInput" placeholder="Rechercher une reference ou famille..." oninput="filterTable()">
-      <button class="btn-sm" onclick="selectAll()">Tout selectionner</button>
-      <button class="btn-sm" onclick="selectNone()">Tout deselectionner</button>
-    </div>
-    <table>
-      <thead>
-        <tr>
-          <th><input type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
-          <th>Reference</th>
-          <th>Famille</th>
-          <th>Details</th>
-        </tr>
-      </thead>
-      <tbody id="refTable"></tbody>
-    </table>
-  </div>
-
-  <button class="btn-main" id="generateBtn" onclick="generate()">
-    ⬇️ Generer et telecharger le ZIP
-  </button>
-
-  <div class="progress-wrap" id="progressWrap">
-    <div class="progress-bar-bg"><div class="progress-bar" id="progressBar"></div></div>
-    <div class="progress-label" id="progressLabel">Generation en cours...</div>
-  </div>
-
-  <div class="success" id="successBox"></div>
-
-</div>
-
-<script>
-let allRefs   = [];
-let logoB64   = null;
-let csvFile   = null;
-
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('csvZone').classList.remove('drag');
-  const file = e.dataTransfer.files[0];
-  if (file) handleCSV(file);
-}
-
-function handleCSV(file) {
-  if (!file) return;
-  csvFile = file;
-  document.getElementById('csvName').textContent = file.name;
-  const fd = new FormData();
-  fd.append('csv', file);
-  fetch('/parse', { method: 'POST', body: fd })
-    .then(r => r.json())
-    .then(data => {
-      allRefs = data.refs;
-      renderTable(allRefs);
-      document.getElementById('tableWrap').style.display = 'block';
-      document.getElementById('generateBtn').style.display = 'block';
-      updateCount();
-    });
-}
-
-function handleLogo(file) {
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    logoB64 = e.target.result;
-    const preview = document.getElementById('logoPreview');
-    preview.src = logoB64;
-    preview.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
-}
-
-function renderTable(refs) {
-  const tbody = document.getElementById('refTable');
-  tbody.innerHTML = '';
-  refs.forEach((item, i) => {
-    const details = item.extra.map(e => `${e[0]}: ${e[1]}`).join(' · ');
-    tbody.innerHTML += `
-      <tr data-idx="${i}">
-        <td><input type="checkbox" class="ref-check" checked onchange="updateCount()"></td>
-        <td><strong>${item.ref}</strong></td>
-        <td><span class="badge">${item.famille}</span></td>
-        <td style="color:#666;font-size:12px">${details}</td>
-      </tr>`;
-  });
-  updateCount();
-}
-
-function filterTable() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
-  document.querySelectorAll('#refTable tr').forEach(tr => {
-    tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
-  });
-}
-
-function selectAll()  { document.querySelectorAll('.ref-check').forEach(c => c.checked = true);  updateCount(); }
-function selectNone() { document.querySelectorAll('.ref-check').forEach(c => c.checked = false); updateCount(); }
-function toggleAll(cb) { document.querySelectorAll('.ref-check').forEach(c => c.checked = cb.checked); updateCount(); }
-
-function updateCount() {
-  const total    = document.querySelectorAll('.ref-check').length;
-  const selected = document.querySelectorAll('.ref-check:checked').length;
-  document.getElementById('countLabel').textContent = `${selected} / ${total} selectionnees`;
-  document.getElementById('generateBtn').textContent = `⬇️ Generer ${selected} QR code${selected > 1 ? 's' : ''} et telecharger le ZIP`;
-}
-
-function getSelected() {
-  const rows = document.querySelectorAll('#refTable tr');
-  const selected = [];
-  rows.forEach((tr, i) => {
-    const cb = tr.querySelector('.ref-check');
-    if (cb && cb.checked) selected.push(allRefs[parseInt(tr.dataset.idx)]);
-  });
-  return selected;
-}
-
-async function generate() {
-  const selected = getSelected();
-  if (!selected.length) { alert('Selectionnez au moins une reference.'); return; }
-
-  const btn = document.getElementById('generateBtn');
-  btn.disabled = true;
-  document.getElementById('progressWrap').style.display = 'block';
-  document.getElementById('successBox').style.display   = 'none';
-  document.getElementById('progressBar').style.width    = '30%';
-  document.getElementById('progressLabel').textContent  = 'Generation en cours...';
-
-  const body = JSON.stringify({ refs: selected, logo: logoB64 });
-
-  try {
-    const res  = await fetch('/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
-    const blob = await res.blob();
-
-    document.getElementById('progressBar').style.width = '100%';
-    document.getElementById('progressLabel').textContent = 'Telechargement...';
-
-    const url = URL.createObjectURL(blob);
-    const a   = document.createElement('a');
-    a.href = url; a.download = 'qrcodes.zip'; a.click();
-    URL.revokeObjectURL(url);
-
-    document.getElementById('successBox').style.display = 'block';
-    document.getElementById('successBox').textContent   = '✅ ' + selected.length + ' QR code(s) generes et telecharges avec succes !';
-  } catch(e) {
-    alert('Erreur : ' + e.message);
-  }
-
-  btn.disabled = false;
-  document.getElementById('progressWrap').style.display = 'none';
-}
-</script>
-</body>
-</html>
+        <div class="logo-section">
+            
