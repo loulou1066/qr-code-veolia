@@ -284,7 +284,7 @@
     </div>
 
     <div class="container">
-        <h1>Générateur QR Code Veolia</h1>
+        <h1>🔲 Générateur QR Code Veolia</h1>
         
         <div class="upload-section">
             <h3 class="section-title">1. Charger le fichier CSV</h3>
@@ -309,4 +309,227 @@
                     <img id="veoliaLogoPreview" class="logo-preview" style="display:none;">
                 </label>
                 
-          
+                <label class="logo-option" id="option-custom">
+                    <input type="radio" name="logoChoice" value="custom">
+                    <span>Image personnalisée</span>
+                    <img id="customLogoPreview" class="logo-preview" style="display:none;">
+                </label>
+            </div>
+            
+            <div class="custom-logo-upload" id="customLogoUpload">
+                <label for="logoFile" style="display: block; margin-bottom: 5px; font-weight: 500;">
+                    Sélectionner une image :
+                </label>
+                <input type="file" id="logoFile" accept="image/*" class="file-input">
+            </div>
+        </div>
+
+        <div class="preview-section" id="preview" style="display:none;">
+            <h3 class="section-title">3. Aperçu des références</h3>
+            <div id="previewContent"></div>
+            <button onclick="generateQRCodes()" id="generateBtn">
+                Générer les QR Codes
+            </button>
+        </div>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        let parsedData = null;
+        let customLogoData = null;
+        let veoliaLogoData = null;
+
+        // Afficher/masquer l'overlay de chargement
+        function showLoading(text = 'Chargement en cours...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+
+        // Charger le logo Veolia au démarrage
+        console.log('Chargement du logo Veolia...');
+        fetch('/get-veolia-logo')
+            .then(r => {
+                console.log('Réponse reçue:', r.status);
+                return r.json();
+            })
+            .then(data => {
+                console.log('Données logo:', data);
+                if (data.logo) {
+                    veoliaLogoData = data.logo;
+                    document.getElementById('veoliaLogoPreview').src = data.logo;
+                    document.getElementById('veoliaLogoPreview').style.display = 'block';
+                    console.log('✓ Logo Veolia chargé');
+                } else {
+                    console.log('✗ Pas de logo Veolia disponible');
+                }
+            })
+            .catch(err => {
+                console.error('Erreur chargement logo Veolia:', err);
+            });
+
+        // Afficher les infos du fichier sélectionné
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const fileInfo = document.getElementById('fileInfo');
+            
+            if (file) {
+                const size = (file.size / 1024).toFixed(2);
+                fileInfo.innerHTML = `
+                    <strong>Fichier sélectionné :</strong> ${file.name}<br>
+                    <strong>Taille :</strong> ${size} KB
+                `;
+                fileInfo.classList.add('active');
+            } else {
+                fileInfo.classList.remove('active');
+            }
+        });
+
+        // Gestion des options de logo
+        document.querySelectorAll('.logo-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.logo-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                this.querySelector('input[type="radio"]').checked = true;
+                
+                const customUpload = document.getElementById('customLogoUpload');
+                if (this.id === 'option-custom') {
+                    customUpload.classList.add('active');
+                } else {
+                    customUpload.classList.remove('active');
+                }
+            });
+        });
+
+        // Gestion de l'upload du logo personnalisé
+        document.getElementById('logoFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                showLoading('Chargement de l\'image...');
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    customLogoData = event.target.result;
+                    document.getElementById('customLogoPreview').src = customLogoData;
+                    document.getElementById('customLogoPreview').style.display = 'block';
+                    hideLoading();
+                    showStatus('Image chargée avec succès', 'success');
+                };
+                reader.onerror = function() {
+                    hideLoading();
+                    showStatus('Erreur lors du chargement de l\'image', 'error');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function parseCSV() {
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatus('⚠️ Veuillez sélectionner un fichier CSV', 'error');
+                return;
+            }
+
+            console.log('Début analyse CSV:', file.name);
+            const parseBtn = document.getElementById('parseBtn');
+            parseBtn.disabled = true;
+            parseBtn.innerHTML = '<span class="spinner"></span>Analyse en cours...';
+            
+            showLoading('Analyse du fichier CSV...');
+
+            const formData = new FormData();
+            formData.append('csv', file);
+
+            fetch('/parse', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                console.log('Réponse serveur:', response.status);
+                if (!response.ok) {
+                    throw new Error(`Erreur serveur: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Données reçues:', data);
+                hideLoading();
+                parseBtn.disabled = false;
+                parseBtn.innerHTML = 'Analyser le CSV';
+                
+                if (data.error) {
+                    showStatus('❌ ' + data.error, 'error');
+                    return;
+                }
+                
+                parsedData = data;
+                displayPreview(data);
+                showStatus(`✅ ${data.refs.length} référence(s) chargée(s) avec succès`, 'success');
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                hideLoading();
+                parseBtn.disabled = false;
+                parseBtn.innerHTML = 'Analyser le CSV';
+                showStatus('❌ Erreur lors de l\'analyse du CSV: ' + error.message, 'error');
+            });
+        }
+
+        function displayPreview(data) {
+            const preview = document.getElementById('preview');
+            const content = document.getElementById('previewContent');
+            
+            let html = `
+                <div style="margin-bottom: 15px; padding: 10px; background-color: #e7f3ff; border-radius: 5px;">
+                    <strong>Total:</strong> ${data.refs.length} référence(s) trouvée(s)
+                </div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Référence</th>
+                                <th>Famille</th>
+                                <th>Informations supplémentaires</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            data.refs.forEach(ref => {
+                const extraInfo = ref.extra.map(e => `${e[0]}: ${e[1]}`).join(', ') || '-';
+                html += `
+                    <tr>
+                        <td><strong>${ref.ref}</strong></td>
+                        <td>${ref.famille}</td>
+                        <td>${extraInfo}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            content.innerHTML = html;
+            preview.style.display = 'block';
+            
+            // Scroll vers l'aperçu
+            preview.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function generateQRCodes() {
+            if (!parsedData) {
+                showStatus('⚠️ Veuillez d\'abord charger un fichier CSV', 'error');
+                return;
+            }
+
+            const logoChoice = document.querySelector('input[name="logoChoice"]:checked').value;
+            
+            if (logoChoice === 'custom' && !customLogoData) {
+                showStatus('⚠️ Veuillez charger une image personnalisée ou choisir une autre option', 'error');
+                return;
+            }
+
+            const generateB
