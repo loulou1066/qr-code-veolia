@@ -11,7 +11,15 @@ from PIL import Image, ImageDraw, ImageFont
 app = Flask(__name__)
 
 VEOLIA_RED = "#ED1C24"
-LOGO_B64   = None  # sera charge au demarrage
+VEOLIA_LOGO_B64 = None  # sera chargé au démarrage
+
+def load_veolia_logo():
+    """Charge le logo Veolia et le convertit en base64"""
+    global VEOLIA_LOGO_B64
+    logo_path = os.path.join(os.path.dirname(__file__), 'veolia_logo.png')
+    if os.path.exists(logo_path):
+        with open(logo_path, 'rb') as f:
+            VEOLIA_LOGO_B64 = base64.b64encode(f.read()).decode('utf-8')
 
 def load_font(size, bold=False):
     paths = [
@@ -121,6 +129,13 @@ def parse_csv(content):
 def index():
     return open(os.path.join(os.path.dirname(__file__), 'index.html')).read()
 
+@app.route('/get-veolia-logo', methods=['GET'])
+def get_veolia_logo():
+    """Endpoint pour récupérer le logo Veolia en base64"""
+    if VEOLIA_LOGO_B64:
+        return jsonify({'logo': f'data:image/png;base64,{VEOLIA_LOGO_B64}'})
+    return jsonify({'logo': None})
+
 @app.route('/parse', methods=['POST'])
 def parse():
     f = request.files.get('csv')
@@ -153,24 +168,34 @@ def parse():
 
 @app.route('/generate', methods=['POST'])
 def generate():
-    data    = request.json
-    refs    = data.get('refs', [])
-    logo_b64 = data.get('logo')
+    data = request.json
+    refs = data.get('refs', [])
+    logo_choice = data.get('logoChoice', 'none')  # 'none', 'custom', 'veolia'
+    custom_logo_b64 = data.get('logo')
 
     logo_img = None
-    if logo_b64:
+    
+    # Déterminer quelle source de logo utiliser
+    if logo_choice == 'veolia' and VEOLIA_LOGO_B64:
         try:
-            logo_data = base64.b64decode(logo_b64.split(',')[-1])
-            logo_img  = Image.open(io.BytesIO(logo_data)).convert('RGBA')
-        except: pass
+            logo_data = base64.b64decode(VEOLIA_LOGO_B64)
+            logo_img = Image.open(io.BytesIO(logo_data)).convert('RGBA')
+        except Exception as e:
+            print(f"Erreur chargement logo Veolia: {e}")
+    elif logo_choice == 'custom' and custom_logo_b64:
+        try:
+            logo_data = base64.b64decode(custom_logo_b64.split(',')[-1])
+            logo_img = Image.open(io.BytesIO(logo_data)).convert('RGBA')
+        except Exception as e:
+            print(f"Erreur chargement logo custom: {e}")
 
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
         for item in refs:
-            ref    = item['ref']
+            ref = item['ref']
             famille = sanitize(item['famille']) or get_prefix(ref)
-            extra  = [(e[0], e[1]) for e in item['extra']]
-            img    = generate_qr_image(ref, extra, logo_img)
+            extra = [(e[0], e[1]) for e in item['extra']]
+            img = generate_qr_image(ref, extra, logo_img)
             img_buf = io.BytesIO()
             img.save(img_buf, format='PNG')
             zf.writestr(f"{famille}/{ref}.png", img_buf.getvalue())
@@ -179,4 +204,5 @@ def generate():
     return send_file(buf, mimetype='application/zip', as_attachment=True, download_name='qrcodes.zip')
 
 if __name__ == '__main__':
+    load_veolia_logo()  # Charger le logo au démarrage
     app.run(host='0.0.0.0', port=5000)
