@@ -5,54 +5,84 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Générateur QR Code Veolia</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
+            max-width: 900px;
             margin: 50px auto;
             padding: 20px;
             background-color: #f5f5f5;
         }
+        
         .container {
             background: white;
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
+        
         h1 {
             color: #ED1C24;
             text-align: center;
+            margin-bottom: 30px;
         }
+        
         .upload-section, .logo-section, .preview-section {
             margin: 20px 0;
             padding: 20px;
             border: 2px dashed #ddd;
             border-radius: 5px;
+            background-color: #fafafa;
         }
+        
+        .section-title {
+            color: #ED1C24;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
         .logo-options {
             display: flex;
             flex-direction: column;
             gap: 15px;
             margin-top: 10px;
         }
+        
         .logo-option {
             display: flex;
             align-items: center;
-            padding: 10px;
+            padding: 15px;
             border: 2px solid #ddd;
             border-radius: 5px;
             cursor: pointer;
             transition: all 0.3s;
+            background-color: white;
         }
+        
         .logo-option:hover {
             background-color: #f9f9f9;
+            border-color: #bbb;
         }
+        
         .logo-option.selected {
             border-color: #ED1C24;
             background-color: #fff5f5;
         }
+        
         .logo-option input[type="radio"] {
             margin-right: 10px;
+            cursor: pointer;
         }
+        
+        .logo-option span {
+            flex: 1;
+            font-weight: 500;
+        }
+        
         .logo-preview {
             width: 50px;
             height: 50px;
@@ -60,14 +90,23 @@
             object-fit: contain;
             border: 1px solid #ddd;
             border-radius: 3px;
+            padding: 3px;
+            background: white;
         }
+        
         .custom-logo-upload {
-            margin-top: 10px;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+            border: 1px solid #ddd;
             display: none;
         }
+        
         .custom-logo-upload.active {
             display: block;
         }
+        
         button {
             background-color: #ED1C24;
             color: white;
@@ -78,61 +117,196 @@
             font-size: 16px;
             width: 100%;
             margin-top: 10px;
+            font-weight: bold;
+            transition: all 0.3s;
+            position: relative;
         }
-        button:hover {
+        
+        button:hover:not(:disabled) {
             background-color: #d01820;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(237, 28, 36, 0.3);
         }
+        
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
         button:disabled {
             background-color: #ccc;
             cursor: not-allowed;
+            transform: none;
         }
+        
         .file-input {
             margin: 10px 0;
+            padding: 10px;
+            width: 100%;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            background-color: white;
+            cursor: pointer;
         }
+        
+        .file-input:hover {
+            border-color: #ED1C24;
+        }
+        
+        /* Spinner de chargement */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loading-overlay.active {
+            display: flex;
+        }
+        
+        .loading-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #ED1C24;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
         #preview {
             margin-top: 20px;
         }
+        
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
+            background-color: white;
         }
+        
         th, td {
-            padding: 8px;
+            padding: 12px 8px;
             text-align: left;
             border-bottom: 1px solid #ddd;
         }
+        
         th {
             background-color: #ED1C24;
             color: white;
+            font-weight: bold;
         }
+        
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        
         .status {
             margin-top: 20px;
-            padding: 10px;
+            padding: 15px;
             border-radius: 5px;
             display: none;
+            font-weight: 500;
         }
+        
         .status.success {
             background-color: #d4edda;
             color: #155724;
+            border: 1px solid #c3e6cb;
             display: block;
         }
+        
         .status.error {
             background-color: #f8d7da;
             color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        
+        .file-info {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e7f3ff;
+            border-radius: 5px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .file-info.active {
             display: block;
         }
     </style>
 </head>
 <body>
+    <!-- Overlay de chargement -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h3 id="loadingText">Chargement en cours...</h3>
+        </div>
+    </div>
+
     <div class="container">
-        <h1>🔲 Générateur QR Code Veolia</h1>
+        <h1>Générateur QR Code Veolia</h1>
         
         <div class="upload-section">
-            <h3>1. Charger le fichier CSV</h3>
+            <h3 class="section-title">1. Charger le fichier CSV</h3>
             <input type="file" id="csvFile" accept=".csv" class="file-input">
-            <button onclick="parseCSV()">Analyser le CSV</button>
+            <div class="file-info" id="fileInfo"></div>
+            <button onclick="parseCSV()" id="parseBtn">
+                Analyser le CSV
+            </button>
         </div>
 
         <div class="logo-section">
-            
+            <h3 class="section-title">2. Choisir le logo pour les QR codes</h3>
+            <div class="logo-options">
+                <label class="logo-option selected" id="option-none">
+                    <input type="radio" name="logoChoice" value="none" checked>
+                    <span>Aucun logo</span>
+                </label>
+                
+                <label class="logo-option" id="option-veolia">
+                    <input type="radio" name="logoChoice" value="veolia">
+                    <span>Logo Veolia</span>
+                    <img id="veoliaLogoPreview" class="logo-preview" style="display:none;">
+                </label>
+                
+          
